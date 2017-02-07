@@ -74,7 +74,10 @@ class TwoLayerNet(object):
     # Store the result in the scores variable, which should be an array of      #
     # shape (N, C).                                                             #
     #############################################################################
-    pass
+    f = lambda x: np.max(0,x)
+    h1 = f(X.dot(W1)+b1)
+    scores = h1.dot(W2)+b2
+    
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -92,7 +95,9 @@ class TwoLayerNet(object):
     # classifier loss. So that your results match ours, multiply the            #
     # regularization loss by 0.5                                                #
     #############################################################################
-    pass
+    def softmax(Predict):
+      num_trains, num_classes = Predict.shape
+      
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
