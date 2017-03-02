@@ -186,6 +186,10 @@ class FullyConnectedNet(object):
         num_in,num_out = hidden_dims[i-1],hidden_dims[i]
       self.params['W%d' % (i+1)] = weight_scale*np.random.randn(num_in,num_out)
       self.params['b%d' % (i+1)] = np.zeros(num_out)
+      if self.use_batchnorm and i != self.num_layers-1:
+        self.params['gamma%d' % (i+1)] = np.ones(num_out)
+        self.params['beta%d' % (i+1)] = np.zeros(num_out)
+      
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -251,8 +255,15 @@ class FullyConnectedNet(object):
         ini = X
       else:
         ini = outi
-      outi,cachei = affine_relu_forward(ini,Wi,bi)
+      if self.use_batchnorm:
+        gammai,betai = self.params['gamma%d' % i],self.params['beta%d' % i] 
+        outi,cachei = affine_bash_relu_forward(ini,Wi,bi,gammai,betai,self.bn_params[i-1])
+      else:
+        outi,cachei = affine_relu_forward(ini,Wi,bi)
       caches.append(cachei)   
+      if self.use_dropout:
+        outi,cachei = dropout_forward(outi,self.dropout_param)
+        caches.append(cachei)
     Wi,bi = self.params['W%d' % self.num_layers],self.params['b%d' % self.num_layers]    
     scores,cachei = affine_forward(outi,Wi,bi)
     caches.append(cachei)             
@@ -285,7 +296,15 @@ class FullyConnectedNet(object):
     grads['b%d' % num_layers] = db + reg * self.params['b%d' % num_layers]   
     loss += 0.5 * reg * np.sum(np.square(self.params['W%d' % num_layers]))
     for i in xrange(num_layers-1,0,-1):
-      dX,dW,db = affine_relu_backward(dX,caches.pop())
+      if self.use_dropout:
+        dX = dropout_backward(dX,caches.pop())
+      if self.use_batchnorm:
+        dX,dW,db,dgamma,dbeta = affine_bash_relu_backward(dX,caches.pop())
+        grads['gamma%d' % i] = dgamma 
+        grads['beta%d' % i] = dbeta
+      else:
+        dX,dW,db = affine_relu_backward(dX,caches.pop())
+        
       grads['W%d' % i] = dW + reg * self.params['W%d' % i]
       grads['b%d' % i] = db + reg * self.params['b%d' % i]
       loss += 0.5 * reg * np.sum(np.square(self.params['W%d' % i]))
