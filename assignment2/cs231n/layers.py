@@ -385,11 +385,25 @@ def conv_forward_naive(x, w, b, conv_param):
   - cache: (x, w, b, conv_param)
   """
   out = None
+  stride,pad = conv_param['stride'],conv_param['pad']
   #############################################################################
   # TODO: Implement the convolutional forward pass.                           #
   # Hint: you can use the function np.pad for padding.                        #
   #############################################################################
-  pass
+  N,C,H,W = x.shape
+  F,_,HH,WW = w.shape
+  H_out = 1 + (H + 2 * pad - HH) / stride
+  W_out = 1 + (W + 2 * pad - WW) / stride
+  out = np.zeros([N,F,H_out,W_out])
+  x_pad = np.pad(x,((0,0),(0,0),(pad,pad),(pad,pad)),'constant')
+  for i in xrange(N):
+    xi = x_pad[i]
+    for j in xrange(F):
+      for m in xrange(H_out):
+        hbeg,hend = m*stride, m*stride+HH
+        for n in xrange(W_out):
+          wbeg,wend = n*stride, n*stride+WW
+          out[i,j,m,n] = np.sum(w[j]*xi[:,hbeg:hend,wbeg:wend])+b[j]     
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -414,7 +428,25 @@ def conv_backward_naive(dout, cache):
   #############################################################################
   # TODO: Implement the convolutional backward pass.                          #
   #############################################################################
-  pass
+  x, w, b, conv_param = cache
+  stride,pad = conv_param['stride'],conv_param['pad']
+  N,F,H_out,W_out = dout.shape
+  _,C,HH,WW = w.shape
+  _,_,H,W = x.shape
+  dx, dw, db = np.zeros_like(x),np.zeros_like(w),np.zeros_like(b)
+  x_pad = np.pad(x,((0,0),(0,0),(pad,pad),(pad,pad)),'constant')
+  for i in xrange(N):
+    xi = x_pad[i]
+    dxi = np.zeros_like(xi)
+    for j in xrange(F):
+      for m in xrange(H_out):
+        hbeg,hend = m*stride, m*stride+HH
+        for n in xrange(W_out):
+          wbeg,wend = n*stride, n*stride+WW
+          dxi[:,hbeg:hend,wbeg:wend] += dout[i,j,m,n]* w[j]
+          dw[j] += dout[i,j,m,n]* xi[:,hbeg:hend,wbeg:wend]
+          db[j] += dout[i,j,m,n]
+    dx[i] = dxi[:,pad:-pad,pad:-pad]
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -440,7 +472,16 @@ def max_pool_forward_naive(x, pool_param):
   #############################################################################
   # TODO: Implement the max pooling forward pass                              #
   #############################################################################
-  pass
+  N, C, H, W = x.shape
+  ph,pw,stride = pool_param['pool_height'],pool_param['pool_width'],pool_param['stride']
+  H_out = 1 + (H-ph)/stride
+  W_out = 1 + (W-pw)/stride
+  out = np.zeros([N,C,H_out,W_out])
+  for i in xrange(H_out):
+    hbeg,hend = i*stride,i*stride+ph
+    for j in xrange(W_out):
+      wbeg,wend = j*stride,j*stride+pw
+      out[:,:,i,j] = np.max(x[:,:,hbeg:hend,wbeg:wend], axis=(2,3))
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -463,7 +504,17 @@ def max_pool_backward_naive(dout, cache):
   #############################################################################
   # TODO: Implement the max pooling backward pass                             #
   #############################################################################
-  pass
+  #x, pool_param = cache
+  #dx = np.zeros_like(x)
+  #N, C, H, W = x.shape
+  #ph,pw,stride = pool_param['pool_height'],pool_param['pool_width'],pool_param['stride']
+  #H_out = 1 + (H-ph)/stride
+  #W_out = 1 + (W-pw)/stride
+  #for i in xrange(H_out):
+  #  hbeg,hend = i*stride,i*stride+ph
+  #  for j in xrange(W_out):
+  #    wbeg,wend = j*stride,j*stride+pw
+  #    
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
